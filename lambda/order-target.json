@@ -1,0 +1,21 @@
+{
+ "name": "order-tracker",
+ "description": "Order and customer lookups via the order-tracker REST API",
+ "targetConfiguration": {"mcp": {"apiGateway": {
+   "restApiId": "jggqjiyotb", "stage": "prod",
+   "apiGatewayToolConfiguration": {
+     "toolFilters": [
+       {"filterPath": "/orders/{order_id}", "methods": ["GET"]},
+       {"filterPath": "/customers/{customer_id}/orders", "methods": ["GET"]},
+       {"filterPath": "/customers/{customer_id}", "methods": ["GET"]}
+     ],
+     "toolOverrides": [
+       {"name": "get_order", "path": "/orders/{order_id}", "method": "GET",
+        "description": "Get status, items, tracking number, carrier and estimated delivery for one order by order ID (e.g. ORD-001)."},
+       {"name": "get_customer_orders", "path": "/customers/{customer_id}/orders", "method": "GET",
+        "description": "List all orders for a customer by customer ID (e.g. CUST-123)."},
+       {"name": "get_customer", "path": "/customers/{customer_id}", "method": "GET",
+        "description": "Get a customer's profile by customer ID (e.g. CUST-123)."}
+     ]}}}},
+ "credentialProviderConfigurations": [{"credentialProviderType": "GATEWAY_IAM_ROLE"}]
+}
