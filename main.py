@@ -328,25 +328,31 @@ Invoke deployed agent:
 # ── Imports ───────────────────────────────────────────────────────────────────
 # These imports are provided. Do not remove them.
 from strands import Agent, tool
+from strands.types.exceptions import MCPClientInitializationError
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from bedrock_agentcore.memory import MemoryClient
 from strands.models import BedrockModel
 from strands.tools.mcp.mcp_client import MCPClient
 from mcp.client.streamable_http import streamable_http_client
-import argparse, json
+import argparse, json, re, shutil
 import os, asyncio, boto3
+from pathlib import Path
 from strands.hooks import (
-    HookProvider, AfterInvocationEvent, HookRegistry, MessageAddedEvent,
+    HookProvider,
+    AfterInvocationEvent,
+    HookRegistry,
+    MessageAddedEvent,
 )
 import logging
 import uuid
 from typing import Dict
 from bedrock_agentcore.tools.code_interpreter_client import code_session
 from strands_tools.browser import AgentCoreBrowser
-
+from strands_tools.browser.models import BrowserInput
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger("CSAI_Agent")
+logger.setLevel(logging.INFO)
 
 # ── TODO 1 — App Initialisation ───────────────────────────────────────────────
 # The BedrockAgentCoreApp registers the ASGI server that AgentCore Runtime talks
@@ -363,10 +369,41 @@ os.environ["BYPASS_TOOL_CONSENT"] = "true"
 # ── TODO 2 — Configuration ────────────────────────────────────────────────────
 # AWS resource identifiers collected during infrastructure setup.
 
-GATEWAY_URL = "https://customersupportgateway-pvmg53kt0x.gateway.bedrock-agentcore.us-east-1.amazonaws.com/mcp"
-KB_ID       = "3GC3XMJCAZ"
-REGION      = "us-east-1"
-MEMORY_ID   = "CustomerSupportMemory-OmMyl88KSQ"
+GATEWAY_URL = os.getenv(
+    "GATEWAY_URL",
+    "https://customersupportgateway-pvmg53kt0x.gateway.bedrock-agentcore.us-east-1.amazonaws.com/mcp",
+)
+KB_ID = "3GC3XMJCAZ"
+REGION = "us-east-1"
+MEMORY_ID = "CustomerSupportMemory-OmMyl88KSQ"
+
+
+def normalize_session_id(value) -> str:
+    """Return a session ID accepted by the AgentCore Memory API."""
+    session_id = re.sub(r"[^a-zA-Z0-9_-]", "-", str(value or ""))
+    session_id = session_id.strip("-")
+    if not session_id or not session_id[0].isalnum():
+        session_id = f"session-{session_id}"
+    return session_id
+
+
+def prepare_browser_runtime() -> None:
+    """Ensure the bundled Playwright driver can execute on Linux runtime."""
+    try:
+        import playwright
+
+        driver = Path(playwright.__file__).parent / "driver" / "node"
+        if driver.exists() and os.name != "nt":
+            runtime_driver = Path("/tmp/agentcore-playwright-node")
+            if (
+                not runtime_driver.exists()
+                or runtime_driver.stat().st_size != driver.stat().st_size
+            ):
+                shutil.copyfile(driver, runtime_driver)
+            runtime_driver.chmod(0o755)
+            os.environ["PLAYWRIGHT_NODEJS_PATH"] = str(runtime_driver)
+    except Exception:
+        logger.exception("Failed to prepare the Playwright browser runtime")
 
 
 # ── TODO 3 — Model and Clients ────────────────────────────────────────────────
@@ -392,6 +429,7 @@ _bedrock_runtime = boto3.client("bedrock-agent-runtime", region_name=REGION)
 #   { "SEMANTIC": "cs_agent/{actorId}/facts",
 #     "USER_PREFERENCE": "cs_agent/{actorId}/preferences" }
 
+
 def get_namespaces(mem_client: MemoryClient, memory_id: str) -> Dict:
     """Return a dict mapping strategy type → namespace template string."""
     try:
@@ -404,7 +442,9 @@ def get_namespaces(mem_client: MemoryClient, memory_id: str) -> Dict:
     for strategy in strategies:
         strategy_type = strategy.get("type") or strategy.get("memoryStrategyType")
         # Prefer the current field name, fall back to the legacy one.
-        templates = strategy.get("namespaceTemplates") or strategy.get("namespaces") or []
+        templates = (
+            strategy.get("namespaceTemplates") or strategy.get("namespaces") or []
+        )
         if strategy_type and templates:
             namespaces[strategy_type] = templates[0]
 
@@ -419,6 +459,7 @@ def get_namespaces(mem_client: MemoryClient, memory_id: str) -> Dict:
 #
 # AgentCore extracts long-term memory records from saved events asynchronously,
 # which is why recall in a *new* session needs a short delay after the first one.
+
 
 class MemoryHook(HookProvider):
     """Long-term memory hook for the customer support agent."""
@@ -480,10 +521,12 @@ class MemoryHook(HookProvider):
 
             if all_context:
                 context_text = "\n".join(all_context)
-                last_message["content"][0]["text"] = (
-                    f"Customer Context:\n{context_text}\n\n{user_query}"
+                last_message["content"][0][
+                    "text"
+                ] = f"Customer Context:\n{context_text}\n\n{user_query}"
+                logger.info(
+                    "Injected %d memories into the user message", len(all_context)
                 )
-                logger.info("Injected %d memories into the user message", len(all_context))
 
         except Exception as e:
             logger.error("Failed to retrieve customer context: %s", e)
@@ -538,6 +581,7 @@ class MemoryHook(HookProvider):
 # Grounds the agent's product and policy answers in the Bedrock Knowledge Base
 # instead of the model's parametric knowledge.
 
+
 @tool
 def search_knowledge_base(query: str) -> str:
     """
@@ -566,9 +610,7 @@ def search_knowledge_base(query: str) -> str:
             return f"No information found in the knowledge base for: {query}"
 
         chunks = [
-            r["content"]["text"]
-            for r in results
-            if r.get("content", {}).get("text")
+            r["content"]["text"] for r in results if r.get("content", {}).get("text")
         ]
         if not chunks:
             return f"No information found in the knowledge base for: {query}"
@@ -585,6 +627,7 @@ def search_knowledge_base(query: str) -> str:
 # on the post-points subtotal) that an LLM can easily get subtly wrong. The rules
 # are therefore encoded as Python and executed in the AgentCore sandbox, so the
 # numbers are computed rather than predicted.
+
 
 @tool
 def calculate_loyalty_discount(
@@ -690,21 +733,23 @@ print(json.dumps(result, indent=2))
         tier_discount_amount = round(order_total * tier_discount_pct, 2)
         final_total = round(order_total - tier_discount_amount, 2)
 
-        return json.dumps({
-            "order_total": round(order_total, 2),
-            "tier": tier,
-            "points_redeemed": 0,
-            "tier_discount_pct": round(tier_discount_pct * 100, 2),
-            "tier_discount_amount": tier_discount_amount,
-            "final_total": final_total,
-            "total_savings": tier_discount_amount,
-            "points_earned": 0,
-            "remaining_points": loyalty_points,
-            "note": (
-                "Code interpreter unavailable — tier discount only, "
-                "points redemption not applied."
-            ),
-        })
+        return json.dumps(
+            {
+                "order_total": round(order_total, 2),
+                "tier": tier,
+                "points_redeemed": 0,
+                "tier_discount_pct": round(tier_discount_pct * 100, 2),
+                "tier_discount_amount": tier_discount_amount,
+                "final_total": final_total,
+                "total_savings": tier_discount_amount,
+                "points_earned": 0,
+                "remaining_points": loyalty_points,
+                "note": (
+                    "Code interpreter unavailable — tier discount only, "
+                    "points redemption not applied."
+                ),
+            }
+        )
 
 
 SYSTEM_PROMPT = """You are a helpful customer support agent for an Amazon-style e-commerce store.
@@ -732,6 +777,7 @@ Guidelines:
 # local @tool functions, the browser, and the MCP tools loaded from the Gateway —
 # then runs one agent turn with the memory hook attached.
 
+
 @app.entrypoint
 async def invoke(payload, context=None):
     """
@@ -743,8 +789,8 @@ async def invoke(payload, context=None):
       session_id  (str, optional) — session identifier; generated if absent
     """
     user_input = payload.get("prompt", "")
-    actor_id   = payload.get("customer_id", "default_customer")
-    session_id = payload.get("session_id") or str(uuid.uuid4())
+    actor_id = payload.get("customer_id", "default_customer")
+    session_id = normalize_session_id(payload.get("session_id") or uuid.uuid4().hex)
 
     if not user_input:
         return "No prompt provided."
@@ -757,40 +803,105 @@ async def invoke(payload, context=None):
             memory_id=MEMORY_ID,
         )
 
+        prepare_browser_runtime()
         agent_core_browser = AgentCoreBrowser(region=REGION)
+
+        @tool
+        def browser_tool(browser_input: BrowserInput) -> dict:
+            try:
+                result = agent_core_browser.browser(browser_input)
+                logger.info("Browser tool result: %s", result)
+                return result
+            except Exception as error:
+                logger.exception("Browser tool failed (%s)", type(error).__name__)
+                return {"status": "error", "content": [{"text": str(error)}]}
 
         tools = [
             search_knowledge_base,
             calculate_loyalty_discount,
-            agent_core_browser.browser,
+            browser_tool,
         ]
 
         def create_transport():
             return streamable_http_client(GATEWAY_URL)
 
         gateway_client = MCPClient(create_transport)
+        gateway_error = None
 
         # The MCP session must stay open for the whole agent turn, because the
         # Gateway tools are invoked lazily during the model's reasoning loop.
-        with gateway_client:
-            gateway_tools = gateway_client.list_tools_sync()
-            logger.info("Loaded %d tools from the Gateway", len(gateway_tools))
-            tools.extend(gateway_tools)
+        try:
+            with gateway_client:
+                gateway_tools = gateway_client.list_tools_sync()
+                logger.info(
+                    "Gateway connected successfully. Loaded %d tools.",
+                    len(gateway_tools),
+                )
+                tools.extend(gateway_tools)
 
-            agent = Agent(
-                model=model,
-                tools=tools,
-                hooks=[memory_hook],
-                system_prompt=SYSTEM_PROMPT,
+                agent = Agent(
+                    model=model,
+                    tools=tools,
+                    hooks=[memory_hook],
+                    system_prompt=SYSTEM_PROMPT,
+                )
+
+                response = agent(user_input)
+        except MCPClientInitializationError as error:
+            logger.exception(
+                "Gateway MCP client initialization failed (%s).",
+                type(error).__name__,
+            )
+            gateway_error = (
+                "Order tracking and refund tools are temporarily unavailable. "
+                "Please try again shortly or contact support."
+            )
+        except TimeoutError as error:
+            logger.exception(
+                "Gateway connection timed out (%s).",
+                type(error).__name__,
+            )
+            gateway_error = (
+                "Order tracking and refund tools are temporarily unavailable. "
+                "Please try again shortly or contact support."
+            )
+        except ConnectionError as error:
+            logger.exception("Gateway connection failed (%s).", type(error).__name__)
+            gateway_error = (
+                "Order tracking and refund tools are temporarily unavailable. "
+                "Please try again shortly or contact support."
+            )
+        except Exception as error:
+            logger.exception("Unexpected Gateway failure (%s).", type(error).__name__)
+            gateway_error = (
+                "Order tracking and refund tools are temporarily unavailable. "
+                "Please try again shortly or contact support."
             )
 
-            response = agent(user_input)
+        if gateway_error:
+            try:
+                agent = Agent(
+                    model=model,
+                    tools=tools,
+                    hooks=[memory_hook],
+                    system_prompt=SYSTEM_PROMPT,
+                )
+                response = agent(user_input)
+                response_text = response.message["content"][0]["text"]
+                return f"{gateway_error}\n\n{response_text}"
+            except Exception:
+                logger.exception(
+                    "Fallback agent invocation failed after Gateway failure"
+                )
+                return gateway_error
 
         return response.message["content"][0]["text"]
 
-    except Exception as e:
+    except Exception:
         logger.exception("Agent invocation failed")
-        return f"An error occurred while handling your request: {e}"
+        return (
+            "An error occurred while handling your request. Please try again shortly."
+        )
 
 
 # ── CLI entry point (do not modify) ──────────────────────────────────────────

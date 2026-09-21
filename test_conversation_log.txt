@@ -1,0 +1,342 @@
+Customer-support-agent local test evidence
+
+Refund side-effect notice: initiate_refund is an approval/creation action that generates a refund ID. The local Lambda code does not persist to a database, but a live Gateway target may have external side effects.
+
+
+
+=== 1. Order tracking ===
+Prompt: Where is order ORD-001 and what is its status?
+Tool calls:
+- order-tracker___get_order
+Raw tool result excerpts:
+---
+Your order **ORD-001** for the Wireless Headphones Pro has been **shipped** via UPS. The tracking number is **TRK987654321**, and the estimated delivery date is **September 23, 2026**.ERROR:bedrock_agentcore.memory.client:Failed to create event: An error occurred (ValidationException) when calling the CreateEvent operation: 1 validation error detected: Value at 'sessionId' failed to satisfy constraint: Member must satisfy regular expression pattern: [a-zA-Z0-9][a-zA-Z0-9-_]*
+ERROR:CSAI_Agent:Failed to save support interaction: An error occurred (ValidationException) when calling the CreateEvent operation: 1 validation error detected: Value at 'sessionId' failed to satisfy constraint: Member must satisfy regular expression pattern: [a-zA-Z0-9][a-zA-Z0-9-_]*
+Traceback/error output:
+<none>
+Final answer: 'Your order **ORD-001** for the Wireless Headphones Pro has been **shipped** via UPS. The tracking number is **TRK987654321**, and the estimated delivery date is **September 23, 2026**.'
+Capture limitation: Tool names and nearby output were captured from stdout/stderr and Strands logging. main.invoke() does not expose the Agent instance or Agent.messages, so this is not a direct callback-level raw tool-result capture.
+
+=== 2. Refund ===
+Prompt: Please initiate a refund for order ORD-001 for $89.99 because the customer requested a refund.
+Tool calls:
+- refund-processor___initiate_refund
+Raw tool result excerpts:
+---
+The refund for order **ORD-001** has been successfully initiated!
+
+- **Refund ID:** REF-YQCOPNYD  
+- **Status:** APPROVED  
+- **Amount:** $89.99  
+- **Message:** Credit appears in 3-5 business days  
+- **Created at:** 2026-09-21 05:36:39 UTC  
+
+Your refund will be processed and reflected in your account within 3-5 business days. Let me know if you need anything else!ERROR:bedrock_agentcore.memory.client:Failed to create event: An error occurred (ValidationException) when calling the CreateEvent operation: 1 validation error detected: Value at 'sessionId' failed to satisfy constraint: Member must satisfy regular expression pattern: [a-zA-Z0-9][a-zA-Z0-9-_]*
+ERROR:CSAI_Agent:Failed to save support interaction: An error occurred (ValidationException) when calling the CreateEvent operation: 1 validation error detected: Value at 'sessionId' failed to satisfy constraint: Member must satisfy regular expression pattern: [a-zA-Z0-9][a-zA-Z0-9-_]*
+Traceback/error output:
+<none>
+Final answer: 'The refund for order **ORD-001** has been successfully initiated!\n\n- **Refund ID:** REF-YQCOPNYD  \n- **Status:** APPROVED  \n- **Amount:** $89.99  \n- **Message:** Credit appears in 3-5 business days  \n- **Created at:** 2026-09-21 05:36:39 UTC  \n\nYour refund will be processed and reflected in your account within 3-5 business days. Let me know if you need anything else!'
+Capture limitation: Tool names and nearby output were captured from stdout/stderr and Strands logging. main.invoke() does not expose the Agent instance or Agent.messages, so this is not a direct callback-level raw tool-result capture.
+
+=== 3. Browser ===
+Prompt: Open https://example.com and tell me the page title and the first heading.
+Tool calls:
+- browser
+- browser
+- browser
+- browser
+- browser
+- browser
+- browser
+- browser
+- browser
+- browser
+Raw tool result excerpts:
+---
+
+---
+
+---
+
+---
+
+---
+The page title is **Example Domain** and the first heading is also **Example Domain**.ERROR:bedrock_agentcore.memory.client:Failed to create event: An error occurred (ValidationException) when calling the CreateEvent operation: 1 validation error detected: Value at 'sessionId' failed to satisfy constraint: Member must satisfy regular expression pattern: [a-zA-Z0-9][a-zA-Z0-9-_]*
+ERROR:CSAI_Agent:Failed to save support interaction: An error occurred (ValidationException) when calling the CreateEvent operation: 1 validation error detected: Value at 'sessionId' failed to satisfy constraint: Member must satisfy regular expression pattern: [a-zA-Z0-9][a-zA-Z0-9-_]*
+ERROR:CSAI_Agent:Unexpected Gateway failure (RuntimeError).
+Traceback (most recent call last):
+  File "D:\Project\Udacity\assignment\customer-support-agent\main.py", line 807, in invoke
+    response = agent(user_input)
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\strands\agent\agent.py", line 832, in __call__
+    return run_async(
+        lambda: self._invoke_async_and_flush(
+    ...<8 lines>...
+        )
+    )
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\strands\_async.py", line 45, in run_async
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\concurrent\futures\_base.py", line 450, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\concurrent\futures\_base.py", line 395, in __get_result
+    raise self._exception
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\opentelemetry\instrumentation\threading\__init__.py", line 161, in wrapped_func
+    return original_func(*func_args, **func_kwargs)
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\strands\_async.py", line 38, in execute
+    return asyncio.run(execute_async())
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\runners.py", line 203, in run
+    with Runner(debug=debug, loop_factory=loop_factory) as runner:
+         ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\runners.py", line 63, in __exit__
+    self.close()
+    ~~~~~~~~~~^^
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\runners.py", line 73, in close
+    loop.run_until_complete(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        loop.shutdown_default_executor(constants.THREAD_JOIN_TIMEOUT))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\nest_asyncio.py", line 98, in run_until_complete
+    return f.result()
+           ~~~~~~~~^^
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\futures.py", line 208, in result
+    raise self._exception.with_traceback(self._exception_tb)
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\tasks.py", line 289, in __step_run_and_handle_result
+    result = coro.send(None)
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\base_events.py", line 609, in shutdown_default_executor
+    async with timeouts.timeout(timeout):
+               ~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows... [TRIMMED]
+---
+
+---
+
+---
+
+---
+
+---
+I've visited https://example.com for you. Here's what I found:
+
+**Page Title:** Example Domain
+**First Heading (h1):** Example Domain
+
+The page is a simple example domain page with matching title and heading text.ERROR:bedrock_agentcore.memory.client:Failed to create event: An error occurred (ValidationException) when calling the CreateEvent operation: 1 validation error detected: Value at 'sessionId' failed to satisfy constraint: Member must satisfy regular expression pattern: [a-zA-Z0-9][a-zA-Z0-9-_]*
+ERROR:CSAI_Agent:Failed to save support interaction: An error occurred (ValidationException) when calling the CreateEvent operation: 1 validation error detected: Value at 'sessionId' failed to satisfy constraint: Member must satisfy regular expression pattern: [a-zA-Z0-9][a-zA-Z0-9-_]*
+Traceback/error output:
+Traceback (most recent call last):
+  File "D:\Project\Udacity\assignment\customer-support-agent\main.py", line 807, in invoke
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\strands\agent\agent.py", line 832, in __call__
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\strands\_async.py", line 45, in run_async
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\concurrent\futures\_base.py", line 450, in result
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\concurrent\futures\_base.py", line 395, in __get_result
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\concurrent\futures\thread.py", line 86, in run
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\concurrent\futures\thread.py", line 73, in run
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\opentelemetry\instrumentation\threading\__init__.py", line 161, in wrapped_func
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\strands\_async.py", line 38, in execute
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\runners.py", line 203, in run
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\runners.py", line 63, in __exit__
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\runners.py", line 73, in close
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\nest_asyncio.py", line 98, in run_until_complete
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\futures.py", line 208, in result
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\tasks.py", line 289, in __step_run_and_handle_result
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\base_events.py", line 609, in shutdown_default_executor
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\timeouts.py", line 88, in __aenter__
+Final answer: "Order tracking and refund tools are temporarily unavailable. Please try again shortly or contact support.\n\nI've visited https://example.com for you. Here's what I found:\n\n**Page Title:** Example Domain\n**First Heading (h1):** Example Domain\n\nThe page is a simple example domain page with matching title and heading text."
+Capture limitation: Tool names and nearby output were captured from stdout/stderr and Strands logging. main.invoke() does not expose the Agent instance or Agent.messages, so this is not a direct callback-level raw tool-result capture.
+
+=== 4. Gateway failure ===
+Prompt: Where is order ORD-001 and what is its status?
+Tool calls:
+- search_knowledge_base
+- search_knowledge_base
+- search_knowledge_base
+- search_knowledge_base
+Raw tool result excerpts:
+---
+
+---
+
+---
+
+---
+I can see from your customer context that order ORD-001 is for **Wireless Headphones Pro**.
+
+**Status:** SHIPPED  
+**Carrier:** UPS  
+**Tracking Number:** TRK987654321  
+**Estimated Delivery Date:** September 22, 2026
+
+The order was placed for 1 item at $89.99 and is currently in the shipping process with UPS. You should receive it by the estimated delivery date of September 22, 2026.ERROR:bedrock_agentcore.memory.client:Failed to create event: An error occurred (ValidationException) when calling the CreateEvent operation: 1 validation error detected: Value at 'sessionId' failed to satisfy constraint: Member must satisfy regular expression pattern: [a-zA-Z0-9][a-zA-Z0-9-_]*
+ERROR:CSAI_Agent:Failed to save support interaction: An error occurred (ValidationException) when calling the CreateEvent operation: 1 validation error detected: Value at 'sessionId' failed to satisfy constraint: Member must satisfy regular expression pattern: [a-zA-Z0-9][a-zA-Z0-9-_]*
+Traceback/error output:
+ERROR:strands.tools.mcp.mcp_client:client failed to initialize
+Traceback (most recent call last):
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\mcp\client\streamable_http.py", line 688, in streamable_http_client
+    anyio.create_task_group() as tg,
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 797, in __aenter__
+    self.cancel_scope.__enter__()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 431, in __enter__
+    task_state = _task_states[host_task]
+                 ~~~~~~~~~~~~^^^^^^^^^^^
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\weakref.py", line 326, in __getitem__
+    return self.data[ref(key)]
+                     ~~~^^^^^
+TypeError: cannot create weak reference to 'NoneType' object
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\strands\tools\mcp\mcp_client.py", line 462, in start
+    self._init_future.result(timeout=self._startup_timeout)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\concurrent\futures\_base.py", line 450, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\concurrent\futures\_base.py", line 395, in __get_result
+    raise self._exception
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\strands\tools\mcp\mcp_client.py", line 1471, in _async_background_thread
+    async with self._transport_callable() as (read_stream, write_stream, *_):
+               ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\contextlib.py", line 214, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\mcp\client\streamable_http.py", line 675, in streamable_http_client
+    async with contextlib.AsyncExitStack() as stack:
+               ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\contextlib.py", line 768, in __aexit__
+    raise exc
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\contextlib.py", line 751, in __aexit__
+    cb_suppress = await cb(*exc_details)
+                  ^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\httpx2\_client.py", line 2234, in __aexit__
+    await self._transport.__aexit__(exc_type, exc_value, traceback)
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\httpx2\_transports\default.py", line 366, in __aexit__
+    await self._pool.__aexit__(exc_type, exc_value, traceback)
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\httpcore2\_async\connection_pool.py", line 393, in __aexit__
+    await self.aclose()
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\httpcore2\_async\connection_pool.py", line 382, in aclose
+    await self._close_connections(closing_connections)
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\httpcore2\_async\connection_pool.py", line 372, in _close_connections
+    with AsyncShieldCancellation():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\httpcore2\_synchronization.py", line 209, in __enter__
+    self._anyio_shield.__enter__()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 431, in __enter__
+    task_state = _task_states[host_task]
+                 ~~~~~~~~~~~~^^^^^^^^^^^
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\weakref.py", line 326, in __getitem__
+    return self.data[ref(key)]
+                     ~~~^^^^^
+TypeError: cannot create weak reference to 'NoneType' object
+C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\base_events.py:744: RuntimeWarning: coroutine 'MCPClient.stop.<locals>._set_close_event' was never awaited
+  self._ready.clear()
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+ERROR:CSAI_Agent:Gateway MCP client initialization failed (MCPClientInitializationError).
+Traceback (most recent call last):
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\mcp\client\streamable_http.py", line 688, in streamable_http_client
+    anyio.create_task_group() as tg,
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 797, in __aenter__
+    self.cancel_scope.__enter__()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 431, in __enter__
+    task_state = _task_states[host_task]
+                 ~~~~~~~~~~~~^^^^^^^^^^^
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\weakref.py", line 326, in __getitem__
+    return self.data[ref(key)]
+                     ~~~^^^^^
+TypeError: cannot create weak reference to 'NoneType' object
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\strands\tools\mcp\mcp_client.py", line 462, in start
+    self._init_future.result(timeout=self._startup_timeout)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\concurrent\futures\_base.py", line 450, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\concurrent\futures\_base.py", line 395, in __get_result
+    raise self._exception
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\strands\tools\mcp\mcp_client.py", line 1471, in _async_background_thread
+    async with self._transport_callable() as (read_stream, write_stream, *_):
+               ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\contextlib.py", line 214, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\mcp\client\streamable_http.py", line 675, in streamable_http_client
+    async with contextlib.AsyncExitStack() as stack:
+               ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\contextlib.py", line 768, in __aexit__
+    raise exc
+  File "C:\Users\Admin\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\contextlib.py", line 751, in __aexit__
+    cb_suppress = await cb(*exc_details)
+                  ^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\httpx2\_client.py", line 2234, in __aexit__
+    await self._transport.__aexit__(exc_type, exc_value, traceback)
+  File "D:\Project\Udacity\assignment\customer-support-agent\.venv\Lib\site-packages\httpx2\_transports\default.py", line 366, in __aexit__
+    await self._pool.__aexit__(exc_type, exc_value, traceback)
+  File "D:\Project\Udacity\assignment\custom... [TRIMMED]
+Final answer: 'Order tracking and refund tools are temporarily unavailable. Please try again shortly or contact support.\n\nI can see from your customer context that order ORD-001 is for **Wireless Headphones Pro**.\n\n**Status:** SHIPPED  \n**Carrier:** UPS  \n**Tracking Number:** TRK987654321  \n**Estimated Delivery Date:** September 22, 2026\n\nThe order was placed for 1 item at $89.99 and is currently in the shipping process with UPS. You should receive it by the estimated delivery date of September 22, 2026.'
+Capture limitation: Tool names and nearby output were captured from stdout/stderr and Strands logging. main.invoke() does not expose the Agent instance or Agent.messages, so this is not a direct callback-level raw tool-result capture.
+
+=== PASS/FAIL ===
+
+Scenario | Tool response well-formed | Status
+
+1. Order tracking | no | FAIL
+
+2. Refund | no | FAIL
+
+3. Browser | no | FAIL
+
+4. Gateway failure | no | FAIL
+
+Failures are reported above verbatim after credential and Gateway-URL redaction.
+
+
+=== Deployed assignment rerun: 2026-09-21 ===
+Agent: customer_support_agent_direct
+Runtime: arn:aws:bedrock-agentcore:us-east-1:082477474854:runtime/customer_support_agent_direct-HCyhv9CSRJ
+
+Test 1 — Order Tracking (session t1): PASS
+Prompt: Can you track order ORD-001?
+Response: ORD-001 is SHIPPED via UPS; tracking TRK987654321; estimated delivery September 23, 2026.
+
+Test 2 — Refund Processing (session t2): PASS
+Prompt: I want to return my Kindle Paperwhite (ORD-002). Please initiate a refund.
+Response: Refund ID REF-0TDX13QI; status APPROVED; refund appears in 3-5 business days.
+
+Test 3 — Knowledge Base (session t3): PASS
+Response: Platinum benefits include free same-day shipping, a 15% discount, and priority customer support.
+
+Test 4 — Long-Term Memory: PASS
+Session s-A response acknowledged Jane and her concise-response preference.
+Session s-B recalled: Jane; preference for concise responses.
+
+Test 5 — Loyalty Discount Calculation (session t5): PASS
+Response: 4,000 points redeemed; 10% Gold discount; final total $99.00; remaining balance 349 points.
+
+Test 6 — Browser Tool (session t6): FAIL
+Prompt: Go to https://www.udacity.com and tell me the page title.
+Response: Browser automation tool unavailable in the deployed environment; no live page title retrieved.
+Assignment mismatch: the command uses udacity.com, while the stated expected text refers to Amazon.com.
+
+Test 6 alternate URL — Browser Tool (session t6-example): FAIL
+Prompt: Go to https://example.com and tell me the page title and the first heading.
+Response: Browser session initialization failed with a permission error; no live page content retrieved.
+Conclusion: The deployed Browser failure is not specific to Udacity.com.
+
+Test 6 fixed rerun — Browser Tool (session t6-pass): PASS
+Prompt: Go to https://www.udacity.com and tell me the page title.
+Response: The page title of udacity.com is "Learn the Latest Tech Skills; Advance Your Career | Udacity".
+Fix: Added the documented AgentCore Browser stream permissions, including InvokeBrowser and ConnectBrowserAutomationStream, to the deployed execution role; also configured Playwright to use a writable /tmp driver copy in the read-only runtime.
