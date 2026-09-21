@@ -8,3 +8,4 @@ wheels/
 
 # Virtual environments
 .venv
+.bedrock_agentcore/customer_support_agent_direct/dependencies.zip

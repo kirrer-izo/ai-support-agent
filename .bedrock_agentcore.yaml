@@ -92,7 +92,7 @@ agents:
     bedrock_agentcore:
       agent_id: customer_support_agent_direct-HCyhv9CSRJ
       agent_arn: arn:aws:bedrock-agentcore:us-east-1:082477474854:runtime/customer_support_agent_direct-HCyhv9CSRJ
-      agent_session_id: 1d9723af-10b7-4097-8c67-e6585709b5a7
+      agent_session_id: browser-pass-20260921-12345678901
     codebuild:
       project_name: null
       execution_role: null
